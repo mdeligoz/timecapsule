@@ -13,7 +13,7 @@ const ENV: SetupEnv = {
   CF_VERSION_METADATA: { id: VERSION, tag: "", timestamp: "" },
   DB: testEnv.DB,
 };
-// Setup only checks that the team's certs page answers; it never reads the answer.
+// Setup only checks that the team's certs page answers; it never reads the answer, and closes it.
 const TEAM = "https://example-team.cloudflareaccess.com";
 const TEAM_NAME = new URL(TEAM).hostname.split(".")[0];
 
@@ -157,6 +157,34 @@ describe("setup page", () => {
     expect(response.status).toBe(400);
     expect(await response.text()).toContain("This is the token's ID");
     expect(account.calls).toEqual([]);
+  });
+
+  it("closes the team's answer once it has its status, whether the team exists or not", async () => {
+    // Left open, the runtime holds the connection until it gives up on it.
+    for (const [team, status, shows] of [
+      [TEAM_NAME, 200, "Setup is finished"],
+      ["no-such-team", 400, "There is no Zero Trust team named no-such-team"],
+    ] as const) {
+      await testEnv.DB.prepare("UPDATE settings SET setup_started_at = NULL, setup_finished_at = NULL").run();
+      const { fetcher: answers } = world();
+      let closed = false;
+      // The stand-in's own answer, with a body that records being closed.
+      const fetcher = async (url: string, init: RequestInit) => {
+        const answer = await answers(url, init);
+        if (url.startsWith("https://api.cloudflare.com/")) return answer;
+        const body = new ReadableStream({
+          pull: (controller) => controller.enqueue(new TextEncoder().encode("{}")),
+          cancel: () => {
+            closed = true;
+          },
+        });
+        return new Response(body, { status: answer.status, headers: answer.headers });
+      };
+      const response = await setup(finish({ ...(await ready()), team }), ENV, fetcher, NOW);
+      expect(response.status, team).toBe(status);
+      expect(await response.text()).toContain(shows);
+      expect(closed, team).toBe(true);
+    }
   });
 
   it("refuses a team name Zero Trust does not have, before using the token", async () => {

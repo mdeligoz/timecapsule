@@ -215,6 +215,8 @@ async function finishSetup(request: Request, env: SetupEnv, fetcher: Fetcher, no
       502,
     );
   }
+  // Only the status matters; an answer left unread holds its connection open until the runtime gives up on it.
+  certs.body?.cancel().catch(() => undefined);
   if (!certs.ok) {
     return setupForm(draft, [
       html`There is no Zero Trust team named ${new URL(team).hostname.split(".")[0]}. Check the spelling in step 3.`,

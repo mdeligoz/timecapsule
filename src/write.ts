@@ -286,9 +286,22 @@ async function check(
   return { subject: subject.trim(), markdown, body, sendLocal, zone, emails, uploads: ids };
 }
 
+// A new letter counts as written when its Write page opened, so its send-time limits are the hours the page offered,
+// but never from more than 3 hours before Save (owner's call): a long writing session does not make Save refuse the
+// earliest hour offered, and a slow browser clock cannot move the 7 days back by more than that.
+// Stored as its written time, the same moment rules its edits and its 48-hour lock.
+function countedFrom(input: unknown, now: number): number {
+  const opened = (input as { opened?: unknown } | null)?.opened;
+  return Number.isSafeInteger(opened) && (opened as number) <= now && (opened as number) >= now - 3 * HOUR
+    ? (opened as number)
+    : now;
+}
+
 // The owner's browser sends the Markdown and the HTML it made from it; the server never runs Markdown.
 export async function saveLetter(request: Request, env: Env, now: number): Promise<Response> {
-  const letter = await check(await readInput(request), env, now, now);
+  const input = await readInput(request);
+  const written = countedFrom(input, now);
+  const letter = await check(input, env, now, written);
   if (letter instanceof Response) return letter;
 
   // One batch, so a letter is never left without its recipients or files. They find the new letter by its send key.
@@ -306,7 +319,7 @@ export async function saveLetter(request: Request, env: Env, now: number): Promi
       await seal(letter.markdown, key),
       letter.sendLocal,
       letter.zone,
-      now,
+      written,
       writtenZone,
       sendKey,
     ),

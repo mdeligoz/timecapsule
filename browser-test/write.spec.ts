@@ -465,3 +465,22 @@ test("a file dropped while the letter is saving is not added", async ({ page }) 
   await expect(page.getByRole("alert")).toHaveText("Held.");
   await expect(page.locator(".files li")).toHaveCount(0);
 });
+
+test("saves the earliest hour offered even when the page opened two hours before Save", async ({
+  browser,
+  request,
+}) => {
+  // The page's clock stops two hours back: to the server, Save comes two hours after the page worked out its hours.
+  const opened = new Date(Date.now() - 2 * 3_600_000);
+  const { context, page } = await at(browser, request, opened.toISOString());
+  await page.getByLabel("Subject").fill("Written over two hours");
+  await page.getByLabel("Letter").fill("hello");
+  await page.getByLabel("Time zone").selectOption("UTC");
+  await pickDate(page, (await page.locator('input[name="date"]').getAttribute("min")) ?? "");
+  const earliest = await page.getByLabel("Hour").locator("option:not([disabled])").first().getAttribute("value");
+  await page.getByLabel("Hour").selectOption(earliest ?? "");
+  await page.getByRole("button", { name: "Save" }).click();
+  await expect(page).toHaveURL("/");
+  await expect(page.getByRole("link", { name: "Written over two hours" })).toBeVisible();
+  await context.close();
+});

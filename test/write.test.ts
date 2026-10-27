@@ -270,6 +270,41 @@ describe("Saving a letter", () => {
     await refused(letter({ sendLocal: "2047-01-15T09:00" }), /at most 20 years/);
   });
 
+  it("counts a new letter's 7 days from when its Write page opened, up to 3 hours before Save", async () => {
+    // The page opened 2 hours before Save, at 06:00 UTC, so 06:00 a week on was offered as the earliest hour.
+    await saved({ ...letter({ sendLocal: "2027-01-22T06:00" }), opened: NOW * 1000 - 2 * HOUR });
+  });
+
+  it("stores the page's opening time as when the letter was written, so an edit keeps the hour it was saved with", async () => {
+    const opened = NOW * 1000 - 2 * HOUR;
+    await saved({ ...letter({ sendLocal: "2027-01-22T06:00" }), opened });
+    const row = await env.DB.prepare("SELECT id, written_at FROM letters").first<{ id: number; written_at: number }>();
+    expect(row?.written_at).toBe(opened);
+    const edited = await call(
+      "PUT",
+      `/letters/${row?.id}`,
+      JSON.stringify({ ...letter({ subject: "Changed", sendLocal: "2027-01-22T06:00" }), files: [] }),
+      { "content-type": "application/json" },
+    );
+    expect(edited.status).toBe(200);
+  });
+
+  it("counts from a page opened exactly 3 hours before Save", async () => {
+    await saved({ ...letter({ sendLocal: "2027-01-22T05:00" }), opened: NOW * 1000 - 3 * HOUR });
+  });
+
+  it("does not count from a page opened over 3 hours before Save", async () => {
+    // A slow browser clock could otherwise move the 7 days back by as much as it is slow.
+    await refused({ ...letter({ sendLocal: "2027-01-22T04:00" }), opened: NOW * 1000 - 4 * HOUR }, /at least 7 days/);
+  });
+
+  it("counts from Save when the page's time is later than Save or not a time", async () => {
+    await saved({ ...letter({ sendLocal: "2027-01-22T08:00" }), opened: NOW * 1000 + 3 * HOUR });
+    await env.DB.prepare("DELETE FROM recipients").run();
+    await env.DB.prepare("DELETE FROM letters").run();
+    await refused({ ...letter({ sendLocal: "2027-01-22T07:00" }), opened: "yesterday" }, /at least 7 days/);
+  });
+
   it("measures the 7 days in a zone half an hour off UTC", async () => {
     // 7 days on, 08:00 UTC is 13:30 in Kolkata, so 13:00 there (07:30 UTC) is too soon and 14:00 is the first hour.
     await refused(letter({ sendLocal: "2027-01-22T13:00", zone: "Asia/Kolkata" }), /at least 7 days/);

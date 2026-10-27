@@ -30,16 +30,18 @@ let adding = 0;
 let addingBytes = 0;
 let saving = false;
 
+// The send time's limits count from when the letter was written: an edit's first save, or for a new letter when this
+// page opened, which Save sends back so the server counts from the same moment.
+const opened = form.dataset.written ? undefined : Date.now();
+const writtenAt = Number(form.dataset.written) || (opened as number);
+
 // With no zone saved in Settings, a letter starts in the browser's own zone, and its dates are redone in it.
 if (!zone.value) {
   const own = pickOwnZone(zone);
   // A subject the owner typed, and the browser kept on a return to the page, stays.
   if (subject.value === subject.defaultValue) subject.value = defaultSubject(Date.now(), own);
-  Object.assign(date, sendDateLimits(Date.now(), own));
+  Object.assign(date, sendDateLimits(writtenAt, own));
 }
-
-// The send time's limits count from when the letter was written: an edit's first save, or now for a new letter.
-const writtenAt = Number(form.dataset.written) || Date.now();
 const dateToggle = form.querySelector(".date-toggle") as HTMLButtonElement;
 
 // The earliest and latest days are in the letter's zone, so a zone change moves them, and clears a day they rule out.
@@ -256,6 +258,7 @@ form.addEventListener("submit", async (event) => {
     recipients: emails,
     files: [...kept.values()].map((file) => file.id),
     uploads: [...added.values()].map((file) => file.id),
+    opened,
   };
   // Editing saves over the letter; otherwise Save makes a new one.
   const letterId = form.dataset.letter;
