@@ -923,6 +923,10 @@ main > p > .button[href*="reveal"] {
   margin-top: 1.5rem;
 }
 
+.setup .key .button {
+  margin-top: 0.75rem;
+}
+
 .ready {
   margin: 1.5rem 0;
 }
