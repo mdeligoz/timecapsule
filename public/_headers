@@ -1,0 +1,4 @@
+# Font files never change under the same name, so browsers keep them and do not ask again on the next page; on a
+# real install every request goes through Access, and the page shows a larger fallback font until it answers.
+/fonts/*
+  Cache-Control: public, max-age=31536000, immutable

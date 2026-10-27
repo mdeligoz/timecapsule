@@ -38,7 +38,7 @@
 - No web framework — hand-written routing; text templates with HTML escaping
 - CSS — hand-written, no framework; one stylesheet, also bundled into the Worker as text for the pages shown before login, where Access guards the stylesheet too
 - Look — "Sealed letter": paper and serif type, an envelope-and-wax-seal logo, light and dark
-- Fonts — Fraunces (headings) and Source Serif 4 (text), served from `public/fonts` under the SIL Open Font License, Latin and Latin Extended; no font service is called
+- Fonts — Fraunces (headings) and Source Serif 4 (text), served from `public/fonts` under the SIL Open Font License, Latin and Latin Extended; no font service is called; `public/_headers` lets browsers keep them for a year without asking again (#181), so a changed font file must get a new name
 - marked — Markdown to HTML, run in the owner's browser for the preview and on Save; the only package in the running app
 - Letter HTML — the browser sends the cleaned HTML on Save; the server encrypts and stores it, and never runs Markdown
 - Editor — Markdown, with toolbar buttons that insert the syntax and a preview
