@@ -4,6 +4,8 @@ Write a letter today. It arrives by email on the day you choose, a year or twent
 
 timecapsule is a self-hosted alternative to [FutureMe](https://www.futureme.org/). It runs on your own Cloudflare account, on Cloudflare's free plans, so there is no subscription and nobody else holds your letters.
 
+[![Watch the film on YouTube: the timecapsule envelope and its wax seal](docs/images/film.jpg)](https://youtu.be/T1ZPPtAJERA)
+
 | Your letters, each sealed until its day | A waiting letter stays sealed until you reveal it |
 | --- | --- |
 | ![The Letters screen: three waiting letters, each with a stamp showing its send date](docs/images/letters.png) | ![A waiting letter with a wax seal marked Reveal](docs/images/letter.png) |

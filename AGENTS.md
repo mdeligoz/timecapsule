@@ -70,7 +70,20 @@ git fetch --tags
 git tag --list --sort=-v:refname | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | head -n 1
 ```
 
-If `git status` shows changes the person made, stop and ask them what to keep before you go on. Check out the latest release, install and deploy:
+The AGENTS.md on disk is the installed release's. Read this section from the latest release before you go on, as its steps may have changed:
+
+```sh
+git show <tag>:AGENTS.md
+```
+
+Check for changes the person made. `git status` shows edits not yet committed; the second command lists commits they made that are in no release. If either shows anything, stop and ask them what to keep before you go on.
+
+```sh
+git status
+git log --oneline HEAD --not --remotes --tags
+```
+
+Check out the latest release, install and deploy. Checking out a tag leaves the copy off any branch; git's warning about it is expected, and the copy stays on the tag.
 
 ```sh
 git checkout <tag>
@@ -78,7 +91,9 @@ npm ci
 npm run deploy
 ```
 
-`npm run deploy` applies any new database migrations before it deploys, as in Install step 4. Secrets are kept.
+`npm run deploy` applies any new database migrations before it deploys, as in Install step 4. Secrets are kept. If Wrangler says an update of Wrangler itself is available, leave it: `npm ci` keeps the versions this release was tested with.
+
+Last, ask the person to open Settings: the line at the foot reads `timecapsule v` and the new version.
 
 ## Replace the Resend API key
 
