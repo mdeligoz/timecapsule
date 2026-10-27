@@ -1,0 +1,12 @@
+.DS_Store
+node_modules/
+.dev.vars
+.env
+.wrangler/
+test-results/
+playwright-report/
+public/write.js
+public/settings.js
+public/setup.js
+# The Resend key used for local sends.
+.resend.env

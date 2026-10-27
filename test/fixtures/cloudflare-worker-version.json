@@ -1,0 +1,77 @@
+{
+  "capturedAt": "2026-10-21",
+  "path": "/accounts/{account_id}/workers/scripts/timecapsule/versions/{version_id}",
+  "status": 200,
+  "body": {
+    "result": {
+      "id": "version-id",
+      "resources": {
+        "bindings": [
+          {
+            "name": "ACCESS_AUD",
+            "type": "secret_text"
+          },
+          {
+            "name": "ACCESS_TEAM_DOMAIN",
+            "type": "secret_text"
+          },
+          {
+            "name": "CF_VERSION_METADATA",
+            "type": "version_metadata"
+          },
+          {
+            "database_id": "database-id",
+            "id": "database-id",
+            "name": "DB",
+            "type": "d1"
+          },
+          {
+            "bucket_name": "timecapsule",
+            "name": "FILES",
+            "type": "r2_bucket"
+          },
+          {
+            "name": "LETTER_KEY",
+            "type": "secret_text"
+          },
+          {
+            "name": "OWNER_EMAIL",
+            "type": "secret_text"
+          },
+          {
+            "name": "R2_ACCESS_KEY_ID",
+            "type": "secret_text"
+          },
+          {
+            "name": "R2_ACCOUNT_ID",
+            "type": "secret_text"
+          },
+          {
+            "name": "R2_BUCKET",
+            "text": "timecapsule",
+            "type": "plain_text"
+          },
+          {
+            "name": "R2_SECRET_ACCESS_KEY",
+            "type": "secret_text"
+          },
+          {
+            "name": "RESEND_API_KEY",
+            "type": "secret_text"
+          },
+          {
+            "name": "SEND_DOMAIN",
+            "type": "secret_text"
+          },
+          {
+            "name": "SETUP_DONE",
+            "type": "secret_text"
+          }
+        ]
+      }
+    },
+    "success": true,
+    "errors": [],
+    "messages": []
+  }
+}

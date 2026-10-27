@@ -1,0 +1,5 @@
+# Copy this file to .dev.vars and fill in the copy, then store it as secrets; see the README's Install section.
+# Never put real values in this file itself: git tracks it.
+OWNER_EMAIL=
+SEND_DOMAIN=
+RESEND_API_KEY=

@@ -1,0 +1,961 @@
+/* "Sealed letter": stationery. Cream paper, serif type, a wax seal for the main action, and each letter an envelope
+   with a stamp. Light and dark. */
+
+/* Fraunces for headings and Source Serif 4 for text, served from the app itself (SIL Open Font License, in
+   fonts/). Latin and Latin Extended, so Turkish and most European letters show in the same type. Italics are slanted
+   by the browser. */
+@font-face {
+  font-family: "Fraunces";
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url("/fonts/fraunces-latin-ext.woff2") format("woff2");
+  unicode-range:
+    U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+@font-face {
+  font-family: "Fraunces";
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url("/fonts/fraunces-latin.woff2") format("woff2");
+  unicode-range:
+    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: "Source Serif 4";
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url("/fonts/source-serif-4-latin-ext.woff2") format("woff2");
+  unicode-range:
+    U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+@font-face {
+  font-family: "Source Serif 4";
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url("/fonts/source-serif-4-latin.woff2") format("woff2");
+  unicode-range:
+    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+:root {
+  --paper: #f4ecdd;
+  --sheet: #fffaf0;
+  --ink: #2b2118;
+  --muted: #7a6a58;
+  --rule: #e2d4bd;
+  --fold: #c7b08c;
+  --flap: #f7eedc;
+  --seal: #9b2c22;
+  --seal-dark: #6f1d16;
+  --seal-ink: #fff4e6;
+  --stamp: #2f5a4a;
+  --warn: #b0361f;
+  --shadow: 0 1px 0 rgba(80, 50, 20, 0.08), 0 8px 24px -12px rgba(80, 50, 20, 0.35);
+  color-scheme: light dark;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --paper: #1c1712;
+    --sheet: #262019;
+    --ink: #f1e6d4;
+    --muted: #b3a28b;
+    --rule: #3b3228;
+    --fold: #6b5a46;
+    --flap: #2e271f;
+    --seal: #c4473a;
+    --seal-dark: #8e2b22;
+    --seal-ink: #fff4e6;
+    --stamp: #7fb59f;
+    --warn: #f08a74;
+    --shadow: 0 1px 0 rgba(0, 0, 0, 0.3), 0 10px 28px -12px rgba(0, 0, 0, 0.7);
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font:
+    18px / 1.6 "Source Serif 4",
+    Georgia,
+    serif;
+  padding-bottom: 6rem;
+}
+
+a {
+  color: var(--seal);
+  text-underline-offset: 3px;
+}
+
+/* Header: logo over the wordmark, centred, like a letterhead. */
+.top {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  max-width: 40rem;
+  margin: 0 auto;
+  padding: 2.5rem 1rem 1.5rem;
+  border-bottom: 1px solid var(--rule);
+}
+
+.brand {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.brand .logo {
+  width: 3.25rem;
+  height: 3.25rem;
+}
+
+.logo .paper {
+  fill: var(--sheet);
+  stroke: var(--ink);
+  stroke-width: 1.4;
+}
+
+.logo .fold {
+  fill: none;
+  stroke: var(--ink);
+  stroke-width: 1.4;
+  stroke-linejoin: round;
+}
+
+.logo .seal {
+  fill: var(--seal);
+}
+
+.brand .word {
+  font-family: Fraunces, Georgia, serif;
+  font-size: 1.6rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  font-variation-settings: "opsz" 96;
+}
+
+.menu {
+  display: flex;
+  gap: 1.75rem;
+  font-size: 0.85rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.menu a {
+  color: var(--muted);
+  text-decoration: none;
+}
+
+.menu a[aria-current="page"] {
+  color: var(--ink);
+  border-bottom: 1px solid var(--seal);
+}
+
+main {
+  max-width: 40rem;
+  margin: 0 auto;
+  padding: 2rem 1rem 3rem;
+}
+
+h1,
+h2 {
+  font-family: Fraunces, Georgia, serif;
+  font-weight: 600;
+  font-variation-settings: "opsz" 72;
+  line-height: 1.2;
+}
+
+h1 {
+  margin: 0.25rem 0 1rem;
+  font-size: 2.2rem;
+}
+
+h2 {
+  font-size: 1.35rem;
+}
+
+/* Letters: title and the main action share a line. */
+.heading {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.heading h1 {
+  margin: 0;
+}
+
+/* The main action is a wax seal: deep red, raised, slightly irregular edge. */
+.button {
+  display: inline-block;
+  padding: 0.6rem 1.4rem;
+  border: 0;
+  border-radius: 999px;
+  background: radial-gradient(circle at 35% 30%, var(--seal), var(--seal-dark));
+  color: var(--seal-ink);
+  font:
+    600 0.95rem / 1.4 "Source Serif 4",
+    Georgia,
+    serif;
+  letter-spacing: 0.02em;
+  text-decoration: none;
+  box-shadow:
+    inset 0 -2px 0 rgba(0, 0, 0, 0.25),
+    0 2px 6px -2px rgba(111, 29, 22, 0.6);
+  cursor: pointer;
+}
+
+.button:hover {
+  filter: brightness(1.08);
+}
+
+.button[aria-disabled="true"],
+button:disabled {
+  opacity: 0.45;
+  cursor: default;
+  filter: none;
+}
+
+.danger {
+  background: var(--warn);
+}
+
+/* Tabs as index-card dividers. */
+.tabs {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 2rem;
+  border-bottom: 1px solid var(--rule);
+}
+
+.tabs a {
+  padding: 0.4rem 1.2rem;
+  border: 1px solid transparent;
+  border-bottom: 0;
+  border-radius: 0.6rem 0.6rem 0 0;
+  color: var(--muted);
+  text-decoration: none;
+  margin-bottom: -1px;
+}
+
+.tabs a[aria-current="page"] {
+  background: var(--sheet);
+  border-color: var(--rule);
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.sort {
+  margin: 1rem 0 1.5rem;
+  color: var(--muted);
+  font-size: 0.85rem;
+  font-style: italic;
+}
+
+.sort a[aria-current="page"] {
+  color: var(--ink);
+  font-style: normal;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+/* Each letter is an envelope: flap drawn across the top, a stamp with its send date. */
+.letters {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 1.25rem;
+}
+
+.letters li {
+  position: relative;
+  padding: 3.4rem 9.25rem 1.25rem 1.5rem;
+  min-height: 7.5rem;
+  background: var(--sheet);
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  box-shadow: var(--shadow);
+  --flap-height: 2.9rem;
+}
+
+/* The flap: a shallow V from the top corners to a soft point in the middle, a shade off the paper, with its edge
+   drawn just below it. Both sit under the text. */
+.letters li,
+main > p:has(> .button[href*="reveal"]) {
+  isolation: isolate;
+}
+
+.letters li::before,
+.letters li::after,
+main > p:has(> .button[href*="reveal"])::before,
+main > p:has(> .button[href*="reveal"])::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: var(--flap-height);
+  z-index: -1;
+  clip-path: polygon(0 0, 100% 0, 100% 4%, 72% 60%, 58% 88%, 53.5% 97%, 50% 100%, 46.5% 97%, 42% 88%, 28% 60%, 0 4%);
+  pointer-events: none;
+}
+
+.letters li::before,
+main > p:has(> .button[href*="reveal"])::before {
+  top: 1.5px;
+  background: var(--fold);
+}
+
+.letters li::after,
+main > p:has(> .button[href*="reveal"])::after {
+  top: 0;
+  background: var(--flap);
+}
+
+.letters li:nth-child(even) {
+  transform: rotate(0.35deg);
+}
+
+.letters li:nth-child(3n) {
+  transform: rotate(-0.4deg);
+}
+
+.letter {
+  color: var(--ink);
+  font-family: Fraunces, Georgia, serif;
+  font-size: 1.3rem;
+  font-weight: 600;
+  text-decoration: none;
+  overflow-wrap: anywhere;
+}
+
+.letter::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+}
+
+.letter:hover {
+  color: var(--seal);
+}
+
+.when {
+  margin: 0.2rem 0 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+/* The send time sits in a stamp at the top right: what it is, the date, the hour, the zone, one per line. */
+.letters .stamp {
+  position: absolute;
+  top: 0.9rem;
+  right: 0.9rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 7.25rem;
+  margin: 0;
+  padding: 0.5rem 0.35rem;
+  border: 2px dashed var(--stamp);
+  outline: 3px solid var(--sheet);
+  background: color-mix(in srgb, var(--stamp) 10%, var(--sheet));
+  color: var(--stamp);
+  line-height: 1.2;
+  text-align: center;
+}
+
+.stamp .label {
+  font-size: 0.6rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.stamp .date {
+  margin-top: 0.15rem;
+  font-family: Fraunces, Georgia, serif;
+  font-size: 0.95rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.stamp .time {
+  font-size: 0.75rem;
+}
+
+.stamp .zone {
+  margin-top: 0.1rem;
+  font-size: 0.62rem;
+  opacity: 0.85;
+}
+
+.failed {
+  margin: 0.6rem 0 0;
+  padding-left: 0.75rem;
+  border-left: 3px solid var(--warn);
+  color: var(--warn);
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.empty {
+  padding: 3rem 1rem;
+  color: var(--muted);
+  font-style: italic;
+  text-align: center;
+}
+
+/* Forms. */
+.write label,
+.settings label,
+.setup label {
+  display: block;
+  margin-top: 1.25rem;
+  font-weight: 600;
+}
+
+/* Fields are boxes on the paper, so it is plain where to type. */
+input:not([type="checkbox"]):not([type="file"]),
+select,
+textarea {
+  display: block;
+  width: 100%;
+  margin-top: 0.35rem;
+  padding: 0.6rem 0.8rem;
+  border: 1px solid var(--fold);
+  border-radius: 6px;
+  background: var(--sheet);
+  color: var(--ink);
+  font: inherit;
+  font-weight: 400;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  outline: none;
+  border-color: var(--seal);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--seal) 22%, transparent);
+}
+
+/* The subject reads as the letter's title line. */
+.write input[name="subject"] {
+  font-family: Fraunces, Georgia, serif;
+  font-size: 1.3rem;
+  font-weight: 600;
+}
+
+/* A hidden element stays hidden, whatever display the rules above give it. */
+[hidden] {
+  /* biome-ignore lint/complexity/noImportantStyles: the attribute must win over every display set above. */
+  display: none !important;
+}
+
+/* The letter itself is written on a lined sheet. */
+.editor {
+  margin-top: 1.5rem;
+}
+
+.editor textarea,
+.preview {
+  min-height: 22rem;
+  margin-top: 0.5rem;
+  padding: 1.6rem 1.75rem;
+  border: 1px solid var(--rule);
+  background:
+    repeating-linear-gradient(to bottom, transparent 0 calc(1.8em - 1px), var(--rule) calc(1.8em - 1px) 1.8em) 0 1.6rem
+    / 100% calc(100% - 3.2rem) no-repeat,
+    var(--sheet);
+  box-shadow: var(--shadow);
+  line-height: 1.8;
+  font-size: 1.05rem;
+}
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+/* Formatting buttons are small buttons, not loose words. */
+.write button[type="button"] {
+  padding: 0.3rem 0.8rem;
+  border: 1px solid var(--fold);
+  border-radius: 6px;
+  background: var(--sheet);
+  color: var(--ink);
+  font:
+    600 0.85rem "Source Serif 4",
+    Georgia,
+    serif;
+  cursor: pointer;
+}
+
+.write button[type="button"]:hover:not(:disabled) {
+  border-color: var(--seal);
+  color: var(--seal);
+}
+
+/* Preview takes the writing sheet's place; pressed, it turns red and reads Write, to go back. */
+.preview-toggle {
+  margin-left: auto;
+}
+
+.write .preview-toggle[aria-pressed="true"],
+.write .quick button[aria-pressed="true"] {
+  border-color: var(--seal);
+  background: var(--seal);
+  color: var(--seal-ink);
+}
+
+.write button.preview-toggle[aria-pressed="true"]:hover:not(:disabled) {
+  color: var(--seal-ink);
+}
+
+/* The preview shows the letter as it will read: the same sheet, without the writing lines. */
+.editor .preview {
+  background: var(--sheet);
+}
+
+.send {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.6fr);
+  gap: 0 1rem;
+  margin: 2rem 0 0;
+  padding: 0;
+  border: 0;
+}
+
+.send legend {
+  font-family: Fraunces, Georgia, serif;
+  font-size: 1.2rem;
+  font-weight: 600;
+}
+
+.send label {
+  order: 3;
+  margin-top: 0.4rem;
+  font-weight: 400;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.hint {
+  margin: 0.3rem 0 0;
+  color: var(--muted);
+  font-size: 0.85rem;
+  font-style: italic;
+}
+
+/* Recipients: the owner is the first line in the box, then the space for anyone else. */
+.to-box {
+  display: block;
+  margin-top: 0.35rem;
+  border: 1px solid var(--fold);
+  border-radius: 6px;
+  background: var(--sheet);
+}
+
+.to-box:focus-within {
+  border-color: var(--seal);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--seal) 22%, transparent);
+}
+
+.to-you {
+  margin: 0;
+  padding: 0.6rem 0.8rem 0.5rem;
+  border-bottom: 1px dashed var(--rule);
+  font-weight: 400;
+}
+
+.to-box textarea,
+.to-box textarea:focus {
+  margin: 0;
+  border: 0;
+  background: none;
+  box-shadow: none;
+}
+
+.to-box textarea::placeholder {
+  color: var(--muted);
+  font-style: italic;
+}
+
+/* The date takes its own row, its quick picks under it, then the hour and the zone side by side. */
+.send .date-field {
+  grid-column: 1 / -1;
+  order: 1;
+  margin-top: 0.4rem;
+}
+
+.date-field .name {
+  display: block;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.send .quick {
+  grid-column: 1 / -1;
+  order: 2;
+  margin: 0.75rem 0 0.5rem;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+/* The date field opens a calendar on the paper. */
+.date-picker {
+  position: relative;
+  max-width: 22rem;
+}
+
+.write button.date-toggle {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  margin-top: 0.35rem;
+  padding: 0.6rem 0.8rem;
+  border: 1px solid var(--fold);
+  border-radius: 6px;
+  background: var(--sheet);
+  color: var(--ink);
+  font:
+    400 1rem "Source Serif 4",
+    Georgia,
+    serif;
+  text-align: left;
+}
+
+.write button.date-toggle:hover:not(:disabled) {
+  border-color: var(--seal);
+  color: var(--ink);
+}
+
+.write .date-toggle.empty,
+.write button.date-toggle.empty:hover:not(:disabled) {
+  color: var(--muted);
+  font-style: italic;
+}
+
+.write .date-toggle svg {
+  flex: none;
+  color: var(--muted);
+}
+
+.write .date-toggle[aria-expanded="true"],
+.write .date-toggle:focus-visible {
+  outline: none;
+  border-color: var(--seal);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--seal) 22%, transparent);
+}
+
+.calendar {
+  position: absolute;
+  z-index: 20;
+  top: calc(100% + 0.4rem);
+  left: 0;
+  width: 21rem;
+  padding: 0.85rem;
+  border: 1px solid var(--fold);
+  border-radius: 8px;
+  background: var(--sheet);
+  box-shadow: 0 16px 40px -12px rgba(0, 0, 0, 0.55);
+}
+
+.cal-head {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-bottom: 0.5rem;
+}
+
+.calendar .cal-head select {
+  display: inline-block;
+  width: auto;
+  margin: 0;
+  padding: 0.3rem 0.45rem;
+  font-family: Fraunces, Georgia, serif;
+  font-weight: 600;
+}
+
+.calendar .cal-month {
+  flex: 1;
+}
+
+.write .calendar .cal-step {
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  font-size: 1.2rem;
+  line-height: 1;
+}
+
+.cal-grid {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.cal-grid th {
+  padding: 0.3rem 0;
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.cal-grid td {
+  padding: 1px;
+  text-align: center;
+}
+
+.write .cal-grid button {
+  width: 2.35rem;
+  height: 2.35rem;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  color: var(--ink);
+  font:
+    400 0.95rem "Source Serif 4",
+    Georgia,
+    serif;
+}
+
+.write .cal-grid button:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--fold) 45%, transparent);
+  color: var(--ink);
+}
+
+.write .cal-grid button.today {
+  box-shadow: inset 0 0 0 1px var(--fold);
+  font-weight: 600;
+}
+
+/* The chosen day is a small wax seal. */
+.write .cal-grid button[aria-pressed="true"] {
+  background: radial-gradient(circle at 35% 30%, var(--seal), var(--seal-dark));
+  color: var(--seal-ink);
+  font-weight: 600;
+}
+
+.write .cal-grid button:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+.write .cal-grid button:focus-visible {
+  outline: 2px solid var(--seal);
+  outline-offset: 1px;
+}
+
+/* Files: a dashed drop area on the paper with one button. The file field itself lies over it, unseen. */
+.drop-zone {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 0.35rem;
+  padding: 1.1rem 1rem;
+  border: 1.5px dashed var(--fold);
+  border-radius: 6px;
+  background: var(--sheet);
+  font-weight: 400;
+}
+
+.drop-zone:hover,
+.drop-zone:focus-within {
+  border-color: var(--seal);
+}
+
+.drop-zone:focus-within {
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--seal) 22%, transparent);
+}
+
+.drop-zone .pick {
+  padding: 0.35rem 0.9rem;
+  border: 1px solid var(--fold);
+  border-radius: 6px;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.drop-zone:hover .pick {
+  border-color: var(--seal);
+  color: var(--seal);
+}
+
+.drop-text {
+  color: var(--muted);
+  font-style: italic;
+}
+
+.drop-zone input[type="file"] {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.files {
+  padding-left: 1.25rem;
+}
+
+.files .refused,
+.error {
+  color: var(--warn);
+}
+
+.write > .button,
+.settings .button {
+  margin-top: 2rem;
+}
+
+/* A letter, read: on its sheet. Reveal is the seal you break. */
+.body {
+  margin-top: 1.5rem;
+  padding: 1.5rem 2rem;
+  background: var(--sheet);
+  border: 1px solid var(--rule);
+  box-shadow: var(--shadow);
+  font-size: 1.1rem;
+  overflow-wrap: anywhere;
+}
+
+main > p:has(> .button[href*="reveal"]) {
+  display: grid;
+  place-items: center;
+  margin: 2rem 0;
+  position: relative;
+  padding: 3rem 1rem;
+  background: var(--sheet);
+  --flap-height: 55%;
+  border: 1px solid var(--rule);
+  box-shadow: var(--shadow);
+}
+
+main > p > .button[href*="reveal"] {
+  display: grid;
+  place-items: center;
+  width: 6.5rem;
+  height: 6.5rem;
+  padding: 0;
+  border-radius: 46% 54% 50% 50% / 52% 48% 52% 48%;
+  font-size: 1rem;
+  box-shadow:
+    0 0 0 5px color-mix(in srgb, var(--seal) 35%, transparent),
+    inset 0 -4px 0 rgba(0, 0, 0, 0.25),
+    0 6px 14px -4px rgba(111, 29, 22, 0.7);
+}
+
+.actions {
+  margin-top: 2rem;
+  font-size: 0.95rem;
+}
+
+.settings input[type="checkbox"] {
+  margin: 0 0.6rem 0 0;
+  accent-color: var(--seal);
+}
+
+.export {
+  margin-top: 3rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--rule);
+}
+
+.export .button {
+  margin-top: 0.75rem;
+}
+
+.version {
+  margin: 3rem 0 0;
+  padding-top: 1rem;
+  border-top: 1px solid var(--rule);
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.saved {
+  color: var(--stamp);
+}
+
+/* Setup and finished. */
+.setup section {
+  margin-top: 1.5rem;
+  padding: 0.25rem 1.5rem 1.25rem;
+  background: var(--sheet);
+  border: 1px solid var(--rule);
+  box-shadow: var(--shadow);
+}
+
+.setup .key code {
+  display: block;
+  padding: 0.75rem;
+  background: var(--paper);
+  border: 1px dashed var(--stamp);
+  overflow-wrap: anywhere;
+  font-size: 0.95rem;
+}
+
+.setup > .button {
+  margin-top: 1.5rem;
+}
+
+.ready {
+  margin: 1.5rem 0;
+}
+
+[role="status"] {
+  margin: 1.5rem 0 0;
+  font-family: Fraunces, Georgia, serif;
+  font-size: 1.4rem;
+  color: var(--stamp);
+}
+
+/* On a phone, the hour and zone stack, and the stamp sits under the subject instead of beside it. */
+@media (max-width: 40rem) {
+  .send {
+    grid-template-columns: 1fr;
+  }
+
+  .letters li {
+    padding-right: 1.25rem;
+  }
+
+  .letters .stamp {
+    position: static;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 0 0.5rem;
+    align-items: baseline;
+    width: auto;
+    margin: 0.6rem 0 0;
+    text-align: left;
+  }
+
+  .calendar {
+    width: min(21rem, calc(100vw - 2rem));
+  }
+}

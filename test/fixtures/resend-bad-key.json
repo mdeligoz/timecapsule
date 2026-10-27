@@ -1,0 +1,8 @@
+{
+  "status": 401,
+  "body": {
+    "message": "API key is invalid",
+    "name": "validation_error",
+    "statusCode": 401
+  }
+}

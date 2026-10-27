@@ -1,0 +1,23 @@
+{
+  "name": "timecapsule-cpu-limit-proof",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "vitest run",
+    "test:browser": "playwright test",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.browser.json"
+  },
+  "dependencies": {
+    "marked": "18.1.0"
+  },
+  "devDependencies": {
+    "@cloudflare/vitest-plugin": "1.4.0",
+    "@cloudflare/workers-types": "5.20261010.1",
+    "@playwright/test": "1.64.0",
+    "@types/node": "25.9.9",
+    "esbuild": "0.28.2",
+    "typescript": "5.9.3",
+    "vitest": "5.0.3",
+    "wrangler": "4.149.0"
+  }
+}
