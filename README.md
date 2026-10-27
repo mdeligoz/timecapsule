@@ -97,7 +97,7 @@ Install timecapsule from https://github.com/mdeligoz/timecapsule on my Cloudflar
 
 The agent asks for your email address and your domain, and asks you to paste your Resend key into a file yourself. When it is done, it gives you your app's address.
 
-**From the command line.** You need Node.js 24 and git.
+**From the command line.** You need Node.js 24 or newer, and git.
 
 1. Get the code and its packages, and log in to Cloudflare. A browser opens for you to approve the login.
 

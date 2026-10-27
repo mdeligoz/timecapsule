@@ -36,3 +36,31 @@ export function openWhenReady(waitMs: number): Html {
 ${COUNTDOWN}
 <p>The login takes up to 3 minutes to start working. Until then, timecapsule can show an error or this page.</p>`;
 }
+
+// Finish setup says it is working as soon as the form is sent, and cannot send it twice. It sits inside the page for
+// the same reason as the countdown: on a restore, Access can already catch a request for a separate script. A page
+// shown again, by Back or a reload, starts ready to send; Firefox would otherwise keep the button switched off.
+const WORKING = new Html(`<script>
+(() => {
+  const finish = document.getElementById("finish-setup");
+  const working = document.getElementById("setup-status");
+  const ready = () => {
+    finish.disabled = false;
+    finish.textContent = "Finish setup";
+    working.textContent = "";
+  };
+  addEventListener("pageshow", ready);
+  finish.form.addEventListener("submit", () => {
+    finish.disabled = true;
+    finish.textContent = "Setting up…";
+    working.textContent = "Setting up your login and storage. Keep this page open until it finishes.";
+  });
+})();
+</script>`);
+
+// The setup form's last part: its button, the line that says setup is working, and the script behind both.
+export function finishButton(): Html {
+  return html`<button class="button" type="submit" id="finish-setup">Finish setup</button>
+<p class="hint" id="setup-status" role="status"></p>
+${WORKING}`;
+}

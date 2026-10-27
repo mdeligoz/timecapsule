@@ -1,6 +1,6 @@
 # AGENTS.md
 
-Steps for a coding agent that installs, updates or looks after a person's copy of timecapsule. Run every command from the repository's folder.
+Steps for a coding agent that installs, updates or looks after a person's copy of timecapsule. It needs Node.js 24 or newer and git. After the clone in Install step 1, run every command from the repository's folder.
 
 ## Rules
 
@@ -21,7 +21,13 @@ Before you start, the person has done the Get ready steps of the README's Instal
    npm ci
    ```
 
-2. Log in to Cloudflare. A browser opens; the person approves.
+2. Check whether Wrangler is already logged in to the person's Cloudflare account:
+
+   ```sh
+   npx wrangler whoami
+   ```
+
+   If it names their account, go on; a warning about missing permissions does not stop the steps below. If it is not logged in, log in. A browser opens; the person approves.
 
    ```sh
    npx wrangler login
@@ -34,7 +40,7 @@ Before you start, the person has done the Get ready steps of the README's Instal
    CI=true npx wrangler r2 bucket create timecapsule
    ```
 
-4. Deploy. This applies the database migrations, then deploys. Wrangler asks before it changes the database; the answer is yes. Note the workers.dev address it prints.
+4. Deploy. This applies the database migrations, then deploys. In a terminal, Wrangler asks before it changes the database, and the answer is yes; run without a terminal, it answers yes by itself. Note the workers.dev address it prints.
 
    ```sh
    npm run deploy
@@ -46,7 +52,7 @@ Before you start, the person has done the Get ready steps of the README's Instal
    cp .dev.vars.example .dev.vars
    ```
 
-   Ask the person for their email address and their sending domain, and write them into `.dev.vars` as `OWNER_EMAIL` and `SEND_DOMAIN`. Ask the person to open `.dev.vars` and paste their Resend API key after `RESEND_API_KEY=` themselves. Then store all three and delete the file:
+   Ask the person for their email address and their sending domain, and write them into `.dev.vars` as `OWNER_EMAIL` and `SEND_DOMAIN`. Ask the person to open `.dev.vars` and paste their Resend API key after `RESEND_API_KEY=` themselves, and wait until they say it is done; if the person already keeps the key in a file and tells you so, copy that line in without showing it. Then store all three and delete the file:
 
    ```sh
    npx wrangler secret bulk .dev.vars
@@ -72,7 +78,7 @@ npm ci
 npm run deploy
 ```
 
-`npm run deploy` applies any new database migrations before it deploys; Wrangler asks before it changes the database, and the answer is yes. Secrets are kept.
+`npm run deploy` applies any new database migrations before it deploys, as in Install step 4. Secrets are kept.
 
 ## Replace the Resend API key
 

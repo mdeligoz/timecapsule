@@ -1,7 +1,7 @@
 import { type Html, html, page } from "./html";
 import { fromOtherSite, otherSite } from "./origin";
 import { cleanToken, provision } from "./provision";
-import { openWhenReady } from "./ready";
+import { finishButton, openWhenReady } from "./ready";
 import { importLetterKey, open } from "./seal";
 import type { Fetcher } from "./send";
 
@@ -113,7 +113,7 @@ ${keyStep(draft)}
 <label>Token <input name="token" type="password" required autocomplete="off"></label>
 <p class="hint">Setup uses the token once, then deletes it.</p>
 </section>
-<button class="button" type="submit">Finish setup</button>
+${finishButton()}
 </form>
 ${draft.restore ? html`` : html`<script type="module" src="/setup.js"></script>`}`,
     { status: problem ? 400 : 200, menu: false },
@@ -252,7 +252,7 @@ async function finishSetup(request: Request, env: SetupEnv, fetcher: Fetcher, no
     }
     return withStatus(
       setupForm(draft, [
-        html`Setup is already running, from another tab or a second click. Wait a minute, then reload this page.`,
+        html`Setup is already running, from another tab or an earlier try that was cut off. Wait a minute, then reload this page.`,
       ]),
       409,
     );

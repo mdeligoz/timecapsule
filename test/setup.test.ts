@@ -1,6 +1,7 @@
 import { applyD1Migrations, env as testEnv } from "cloudflare:test";
 import { beforeEach, describe, expect, it } from "vitest";
 import worker from "../src/index";
+import { finishButton } from "../src/ready";
 import { importLetterKey, seal } from "../src/seal";
 import { type SetupEnv, setup } from "../src/setup";
 import { fakeAccount, OURS, PASTED, SCRIPT, VERSION } from "./fake-cloudflare";
@@ -96,6 +97,19 @@ describe("setup page", () => {
       { key: "account_api_tokens", type: "edit" },
       { key: "access", type: "edit" },
     ]);
+  });
+
+  it("says setup is working once the form is sent, on the setup and the restore page, from inside the page", async () => {
+    const SETUP_JS = '<script type="module" src="/setup.js"></script>';
+    const fresh = (await setupPage()).html;
+    expect(fresh).toContain(finishButton().text);
+    expect(fresh).toContain(SETUP_JS);
+    await finishedAt(NOW - 11 * 60_000);
+    const restore = (await setupPage()).html;
+    expect(restore).toContain("Restore timecapsule");
+    expect(restore).toContain(finishButton().text);
+    // Access can already catch a separate script on a restore; the working state does not need one.
+    expect(restore).not.toContain(SETUP_JS);
   });
 
   it("makes a different letter key on every visit", async () => {
