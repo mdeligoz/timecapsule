@@ -6,8 +6,6 @@ import { importLetterKey, open } from "./seal";
 import type { Fetcher } from "./send";
 
 export interface SetupEnv {
-  OWNER_EMAIL: string;
-  SEND_DOMAIN: string;
   CF_VERSION_METADATA: WorkerVersionMetadata;
   DB: D1Database;
   SETUP_DONE?: string;
@@ -66,8 +64,11 @@ function workerName(host: string): string | null {
   return parts.length === 4 && host.endsWith(".workers.dev") ? parts[0] : null;
 }
 
-// A restore takes the key the owner saved at the first setup instead of showing a new one.
-type Draft = { letterKey: string; saved: boolean; team: string; restore?: boolean };
+// A restore takes the key the owner saved at the first setup instead of showing a new one. The owner's three settings
+// are asked on both pages: a restore follows a deploy that lost every secret.
+type Settings = { email: string; domain: string; resendKey: string };
+type Draft = { letterKey: string; saved: boolean; team: string; restore?: boolean } & Settings;
+const NO_SETTINGS: Settings = { email: "", domain: "", resendKey: "" };
 
 const notice = (lines: Html[]) =>
   html`<div class="error" role="alert">${lines.map((line) => html`<p>${line}</p>`)}</div>`;
@@ -94,17 +95,26 @@ function keyStep(draft: Draft): Html {
 function setupForm(draft: Draft, problem?: Html[]): Response {
   return page(
     html`<h1>${draft.restore ? "Restore timecapsule" : "Set up timecapsule"}</h1>
-<p>Three steps, then your app is ready.</p>
+<p>Four steps, then your app is ready.</p>
 ${problem ? notice(problem) : html``}
 <form method="post" action="/setup" class="setup">
 ${keyStep(draft)}
 <section>
-<h2>2. Paste your Zero Trust team name</h2>
+<h2>2. Your email and sending</h2>
+<label>Your email address <input name="owner_email" type="email" value="${draft.email}" required autocomplete="email" spellcheck="false"></label>
+<p class="hint">Only you can log in, and every letter is also sent to you.</p>
+<label>Sending domain <input name="send_domain" value="${draft.domain}" required autocomplete="off" spellcheck="false"></label>
+<p class="hint">Your domain verified at Resend, for example example.com. Letters are sent from letters@ this domain.</p>
+<label>Resend API key <input name="resend_key" type="password" required autocomplete="off" spellcheck="false"></label>
+<p class="hint">The key you made in Resend, with sending access.</p>
+</section>
+<section>
+<h2>3. Paste your Zero Trust team name</h2>
 <p>It is the first part of your Zero Trust login address: <i>team-name</i>.cloudflareaccess.com. Copy it from the <a href="https://one.dash.cloudflare.com/" target="_blank" rel="noopener">Zero Trust dashboard</a> rather than typing it: setup can check that the team exists, not that it is yours, and a wrong team refuses every login.</p>
 <label>Team name <input name="team" value="${draft.team}" required autocomplete="off" spellcheck="false"></label>
 </section>
 <section>
-<h2>3. Create a setup token and paste it</h2>
+<h2>4. Create a setup token and paste it</h2>
 <ol>
 <li><a href="${tokenLink()}" target="_blank" rel="noopener">Open Cloudflare's token page</a>. Its permissions are already filled in.</li>
 <li>Click <b>Continue to summary</b>, then <b>Create Token</b>.</li>
@@ -131,7 +141,7 @@ async function refuseRestore(db: D1Database, draft: Draft, now: number): Promise
   const finished = await readFinishedAt(db);
   if (finished === null) {
     return withStatus(
-      setupForm({ letterKey: newLetterKey(), saved: false, team: draft.team }, [
+      setupForm({ ...draft, letterKey: newLetterKey(), saved: false, restore: false }, [
         html`This app has not been set up yet, so there is nothing to restore. Save the new encryption key below, then press Finish setup.`,
       ]),
       409,
@@ -168,29 +178,34 @@ async function finishSetup(request: Request, env: SetupEnv, fetcher: Fetcher, no
   const field = (name: string) => String(form.get(name) ?? "");
   const posted = field("letter_key").trim();
   const restore = field("restore") === "1";
-  const draft: Draft = { letterKey: posted, saved: field("saved") === "on", team: field("team").trim(), restore };
+  const draft: Draft = {
+    letterKey: posted,
+    saved: field("saved") === "on",
+    team: field("team").trim(),
+    restore,
+    email: field("owner_email").trim(),
+    domain: field("send_domain").trim().toLowerCase(),
+    resendKey: field("resend_key").trim(),
+  };
   const host = new URL(request.url).host;
   const scriptName = workerName(host);
   if (!scriptName) {
     return setupForm(draft, [html`Open setup at your app's workers.dev address, not at ${host}.`]);
   }
-  // The login is made for this address; without it nobody could ever log in.
-  if (!/^[^\s@]+@[^\s@]+$/.test(env.OWNER_EMAIL ?? "")) {
-    return withStatus(
-      setupForm(draft, [
-        html`The owner's email address is not set, or has spaces around it, so setup cannot make your login. Deploy the app again with your email address, then reload this page.`,
-      ]),
-      500,
-    );
+  // The login is made for this address; Cloudflare refuses an address without a plain domain, but only after the token
+  // has been used.
+  if (!/^[^\s@<>"(),;:]+@[a-z0-9-]+(\.[a-z0-9-]+)+$/i.test(draft.email)) {
+    return setupForm(draft, [html`Type your email address, for example you@example.com.`]);
   }
   // Letters and the failure alert are sent from letters@ this domain; anything else makes Resend refuse every one.
-  if (!/^[a-z0-9-]+(\.[a-z0-9-]+)+$/i.test(env.SEND_DOMAIN ?? "")) {
-    return withStatus(
-      setupForm(draft, [
-        html`The sending domain is not set, or is not a plain domain name, so no letter could be sent. Deploy the app again with only your domain verified at Resend, for example example.com: no https://, no @ and no slash. Then reload this page.`,
-      ]),
-      500,
-    );
+  if (!/^[a-z0-9-]+(\.[a-z0-9-]+)+$/.test(draft.domain)) {
+    return setupForm(draft, [
+      html`Type only your domain verified at Resend, for example example.com: no https://, no @ and no slash.`,
+    ]);
+  }
+  // Resend's keys start with re_; anything else would make every letter fail.
+  if (!/^re_\S+$/.test(draft.resendKey)) {
+    return setupForm(draft, [html`Paste your Resend API key: it starts with re_.`]);
   }
   if (restore) {
     const refused = await refuseRestore(env.DB, draft, now);
@@ -220,7 +235,7 @@ async function finishSetup(request: Request, env: SetupEnv, fetcher: Fetcher, no
   }
   if (!certs.ok) {
     return setupForm(draft, [
-      html`There is no Zero Trust team named ${new URL(team).hostname.split(".")[0]}. Check the spelling in step 2.`,
+      html`There is no Zero Trust team named ${new URL(team).hostname.split(".")[0]}. Check the spelling in step 3.`,
     ]);
   }
 
@@ -237,7 +252,7 @@ async function finishSetup(request: Request, env: SetupEnv, fetcher: Fetcher, no
     const finishedAt = await readFinishedAt(env.DB);
     if (finishedAt !== null && !restore && now - finishedAt >= SETTLED_MS) {
       return withStatus(
-        setupForm({ letterKey: "", saved: false, team: draft.team, restore: true }, [
+        setupForm({ ...draft, letterKey: "", saved: false, restore: true }, [
           html`This app lost its settings since setup. Paste the encryption key you saved then to restore it.`,
         ]),
         409,
@@ -265,28 +280,30 @@ async function finishSetup(request: Request, env: SetupEnv, fetcher: Fetcher, no
       scriptName,
       versionId: env.CF_VERSION_METADATA.id,
       host,
-      ownerEmail: env.OWNER_EMAIL,
+      ownerEmail: draft.email,
+      sendDomain: draft.domain,
+      resendKey: draft.resendKey,
       fetch: fetcher,
     });
     if (outcome.ok) {
       await env.DB.prepare("UPDATE settings SET setup_finished_at = ?").bind(now).run();
-      return finished(env.OWNER_EMAIL, outcome.tokenDeleted);
+      return finished(draft.email, outcome.tokenDeleted);
     }
     if (outcome.otherAccount) {
       return setupForm(draft, [
-        html`This token is for a different Cloudflare account. Log in to the account this app runs on, create the token again in step 3, and paste it.`,
+        html`This token is for a different Cloudflare account. Log in to the account this app runs on, create the token again in step 4, and paste it.`,
         html`Delete the token you made in the other account.`,
       ]);
     }
     const said = html`Cloudflare said: ${outcome.reason}`;
     if (outcome.step === "check the token" && outcome.status && outcome.status >= 400 && outcome.status < 500) {
       return setupForm(draft, [
-        html`Cloudflare did not accept this token. Copy the token again, the long value Cloudflare shows only once, and paste it in step 3.`,
+        html`Cloudflare did not accept this token. Copy the token again, the long value Cloudflare shows only once, and paste it in step 4.`,
         said,
       ]);
     }
     const next = outcome.tokenDeleted
-      ? html`Your token was deleted. Create a new one in step 3, paste it, and press Finish setup again.`
+      ? html`Your token was deleted. Create a new one in step 4, paste it, and press Finish setup again.`
       : html`Press Finish setup again with the same token.`;
     return withStatus(setupForm(draft, [html`Setup stopped while it tried to ${outcome.step}.`, said, next]), 502);
   } finally {
@@ -332,7 +349,7 @@ export async function setup(request: Request, env: SetupEnv, fetcher: Fetcher, n
     // Right after setup, a request can still reach the version from before it; a new key there could be saved over
     // the real one. Long after, the settings were lost, so the page asks for the saved key instead.
     if (finishedAt !== null && now - finishedAt >= SETTLED_MS) {
-      return setupForm({ letterKey: "", saved: false, team: "", restore: true });
+      return setupForm({ letterKey: "", saved: false, team: "", restore: true, ...NO_SETTINGS });
     }
     if (finishedAt !== null) {
       return page(
@@ -342,7 +359,7 @@ ${openWhenReady(Math.max(0, finishedAt + LOGIN_WAIT_MS - now))}
         { menu: false },
       );
     }
-    return setupForm({ letterKey: newLetterKey(), saved: false, team: "" });
+    return setupForm({ letterKey: newLetterKey(), saved: false, team: "", ...NO_SETTINGS });
   }
   if (fromOtherSite(request)) return otherSite();
   if (request.method === "POST" && pathname === "/setup") return finishSetup(request, env, fetcher, now);

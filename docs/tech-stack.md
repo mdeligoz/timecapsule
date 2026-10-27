@@ -7,7 +7,7 @@
 - D1 — letters (text, subject, recipients and file names encrypted), send times, settings
 - R2 — photos and videos; private bucket; not encrypted by the app (Cloudflare encrypts at rest)
 - Access — login gate in front of the whole app; owner's email only
-- Worker secrets — stored at install, by the agent or by hand with `wrangler secret bulk`: owner email, sending domain, Resend API key; from setup: encryption key, Access team and audience, R2 account id, bucket name, R2 key id and secret, the setup-done mark
+- Worker secrets — all stored by setup: owner email, sending domain and Resend API key as typed on its page (#173), then encryption key, Access team and audience, R2 account id, bucket name, R2 key id and secret, the setup-done mark
 - Static Assets — CSS and browser scripts
 
 ## Email
@@ -69,9 +69,9 @@
 
 ## Deploy and update
 
-- Install — with a coding agent given the README's prompt, or by hand from the command line: clone, `npm ci`, create D1 and R2 by name, `npm run deploy` (migrations, then deploy), store the owner email, sending domain and Resend key as secrets (a later deploy resets plain vars)
+- Install — with a coding agent given the README's prompt, or by hand from the command line: clone, `npm ci`, create D1 and R2 by name, `npm run deploy` (migrations, then deploy); no secret is stored at install
 - No Deploy to Cloudflare button (owner, 2026-10-27, #160): Cloudflare's page asks about ten questions, with location hints, preview builds and advanced settings, and no sign it scrolls; it was harder than an agent or a terminal, and we cannot change it
-- Setup page — shown on the first visit, at the app's workers.dev address; three steps on one page: save the encryption key (shown once, with a Copy button and an "I have saved it" box), paste the Zero Trust team name, and paste a token made from a pre-filled Cloudflare "create token" link
+- Setup page — shown on the first visit, at the app's workers.dev address; four steps on one page: save the encryption key (shown once, with a Copy button and an "I have saved it" box), type the owner email and sending domain and paste the Resend API key, paste the Zero Trust team name, and paste a token made from a pre-filled Cloudflare "create token" link
 - Team name — pasted by the owner, not read by the app, so the token needs no fifth permission; setup checks the team exists, not that it is the owner's, so a wrong but real team would refuse every login
 - Done by the app with that token — checks the token belongs to the app's own account, clears what an earlier stopped try left, creates a narrow R2 key for file links on the bucket the running version uses, creates the Access application for the owner's email, stores the settings as secrets with the setup-done mark last, then deletes the token; the setup page then switches off
 - A stop before the settings are stored removes what that try made and deletes the token; the page keeps the same encryption key for the next try

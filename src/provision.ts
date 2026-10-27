@@ -14,6 +14,8 @@ export type ProvisionInput = {
   versionId: string;
   host: string;
   ownerEmail: string;
+  sendDomain: string;
+  resendKey: string;
   fetch: Fetcher;
 };
 
@@ -172,6 +174,9 @@ export async function provision(input: ProvisionInput): Promise<ProvisionOutcome
       ["R2_ACCESS_KEY_ID", key.id],
       ["R2_SECRET_ACCESS_KEY", await sha256Hex(key.value)],
       ["R2_BUCKET", bucket],
+      ["OWNER_EMAIL", input.ownerEmail],
+      ["SEND_DOMAIN", input.sendDomain],
+      ["RESEND_API_KEY", input.resendKey],
       ["SETUP_DONE", "1"],
     ];
     for (const [name, text] of settings) {

@@ -10,8 +10,6 @@ import unknownTeam from "./fixtures/access-unknown-team.json";
 const APP = `https://${SCRIPT}.owner.workers.dev`;
 const NOW = 1_800_000_000_000;
 const ENV: SetupEnv = {
-  OWNER_EMAIL: "owner@example.com",
-  SEND_DOMAIN: "letters.example",
   CF_VERSION_METADATA: { id: VERSION, tag: "", timestamp: "" },
   DB: testEnv.DB,
 };
@@ -45,19 +43,28 @@ async function setupPage(fetcher = world().fetcher) {
   return { html, key };
 }
 
+// The owner's three settings, as typed on the setup page.
+const SETTINGS = { owner_email: "owner@example.com", send_domain: "letters.example", resend_key: "re_test_key" };
+
 function finish(fields: Record<string, string>) {
   return visit("/setup", { method: "POST", body: new URLSearchParams(fields) });
 }
 
 async function ready() {
   const { key } = await setupPage();
-  return { letter_key: key, saved: "on", team: TEAM_NAME, token: PASTED };
+  return { letter_key: key, saved: "on", ...SETTINGS, team: TEAM_NAME, token: PASTED };
 }
 
 // The key the owner saved at the first setup.
 const SAVED_KEY = btoa(String.fromCharCode(...new Uint8Array(32).fill(7)));
 
-const restoring = (letterKey: string) => ({ restore: "1", letter_key: letterKey, team: TEAM_NAME, token: PASTED });
+const restoring = (letterKey: string) => ({
+  restore: "1",
+  letter_key: letterKey,
+  ...SETTINGS,
+  team: TEAM_NAME,
+  token: PASTED,
+});
 
 async function finishedAt(at: number) {
   await testEnv.DB.prepare("UPDATE settings SET setup_finished_at = ?").bind(at).run();
@@ -229,19 +236,64 @@ describe("setup page", () => {
     expect(account.calls).toEqual([]);
   });
 
-  it("refuses to run without the owner's email, before using the token", async () => {
+  it("asks for the owner's email, sending domain and Resend key on the setup and the restore page", async () => {
+    const fields = [
+      '<input name="owner_email" type="email"',
+      '<input name="send_domain"',
+      '<input name="resend_key" type="password"',
+    ];
+    const fresh = (await setupPage()).html;
+    for (const field of fields) expect(fresh).toContain(field);
+    await finishedAt(NOW - 11 * 60_000);
+    const restore = (await setupPage()).html;
+    for (const field of fields) expect(restore).toContain(field);
+  });
+
+  it("stores the three settings it was given, trimmed, with the login for that email", async () => {
+    const { account, fetcher } = world();
+    const fields = {
+      ...(await ready()),
+      owner_email: " Owner@Example.com ",
+      send_domain: " Letters.Example ",
+      resend_key: " re_test_key\n",
+    };
+    const response = await setup(finish(fields), ENV, fetcher, NOW);
+    expect(response.status).toBe(200);
+    expect(await response.text()).toContain("Owner@Example.com");
+    expect(account.secrets.get("OWNER_EMAIL")).toBe("Owner@Example.com");
+    expect(account.secrets.get("SEND_DOMAIN")).toBe("letters.example");
+    expect(account.secrets.get("RESEND_API_KEY")).toBe("re_test_key");
+    const login = account.apps.find((app) => app.domain === new URL(APP).host);
+    expect(login?.policies).toMatchObject([{ include: [{ email: { email: "Owner@Example.com" } }] }]);
+  });
+
+  it("refuses an email address nobody could log in with, before using the token, and keeps what was typed", async () => {
     const { account, certs, fetcher } = world();
-    const response = await setup(finish(await ready()), { ...ENV, OWNER_EMAIL: " " }, fetcher, NOW);
-    expect(response.status).toBe(500);
-    expect(await response.text()).toContain("The owner's email address is not set");
-    // A space around the address would make a login nobody's email matches.
-    const padded = await setup(finish(await ready()), { ...ENV, OWNER_EMAIL: "owner@example.com " }, fetcher, NOW);
-    expect(padded.status).toBe(500);
+    // Cloudflare would refuse each when making the login, after the token was used.
+    for (const email of [
+      "",
+      "owner",
+      "owner@",
+      "@example.com",
+      "own er@example.com",
+      "owner@example",
+      "Owner <owner@example.com>",
+      '"owner"@example.com',
+      "owner@example..com",
+    ]) {
+      const response = await setup(finish({ ...(await ready()), owner_email: email }), ENV, fetcher, NOW);
+      expect(response.status, email).toBe(400);
+      const html = await response.text();
+      expect(html).toContain("Type your email address, for example you@example.com.");
+      expect(html).toContain('value="letters.example"');
+      // The Resend key is a secret: like the token, it is pasted again rather than written back into the page.
+      expect(html).not.toContain("re_test_key");
+    }
     expect(account.calls).toEqual([]);
     expect(certs).toEqual([]);
   });
 
-  it("refuses to run while the sending domain is not a plain domain name, before using the token", async () => {
+  it("refuses a sending domain that is not a plain domain name, before using the token", async () => {
     const { account, certs, fetcher } = world();
     // Each would send from an address Resend refuses, so every letter and the failure alert would fail.
     for (const domain of [
@@ -250,14 +302,15 @@ describe("setup page", () => {
       "@example.com",
       "letters@example.com",
       "example.com/",
-      " example.com",
       "exa mple.com",
       "example",
       "example..com",
     ]) {
-      const response = await setup(finish(await ready()), { ...ENV, SEND_DOMAIN: domain }, fetcher, NOW);
-      expect(response.status, domain).toBe(500);
-      expect(await response.text()).toContain("The sending domain is not set, or is not a plain domain name");
+      const response = await setup(finish({ ...(await ready()), send_domain: domain }), ENV, fetcher, NOW);
+      expect(response.status, domain).toBe(400);
+      expect(await response.text()).toContain(
+        "Type only your domain verified at Resend, for example example.com: no https://, no @ and no slash.",
+      );
     }
     expect(account.calls).toEqual([]);
     expect(certs).toEqual([]);
@@ -265,10 +318,22 @@ describe("setup page", () => {
 
   it("accepts a sending domain with more parts or capitals", async () => {
     for (const domain of ["mail.example.co.uk", "Example.com", "my-site.example"]) {
-      const response = await setup(finish(await ready()), { ...ENV, SEND_DOMAIN: domain }, world().fetcher, NOW);
+      const fields = { ...(await ready()), send_domain: domain };
+      const response = await setup(finish(fields), ENV, world().fetcher, NOW);
       expect(response.status, domain).toBe(200);
       await testEnv.DB.prepare("UPDATE settings SET setup_finished_at = NULL").run();
     }
+  });
+
+  it("refuses a Resend key that is not one, before using the token", async () => {
+    const { account, certs, fetcher } = world();
+    for (const key of ["", "abc123", "re_", "re_ab cd"]) {
+      const response = await setup(finish({ ...(await ready()), resend_key: key }), ENV, fetcher, NOW);
+      expect(response.status, key).toBe(400);
+      expect(await response.text()).toContain("Paste your Resend API key: it starts with re_.");
+    }
+    expect(account.calls).toEqual([]);
+    expect(certs).toEqual([]);
   });
 
   it("never runs again once a setup finished, even from a page served by the old version", async () => {

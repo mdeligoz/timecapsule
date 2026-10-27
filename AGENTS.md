@@ -46,20 +46,7 @@ Before you start, the person has done the Get ready steps of the README's Instal
    npm run deploy
    ```
 
-5. Store the three secrets. Copy the example file; `.dev.vars` is ignored by git.
-
-   ```sh
-   cp .dev.vars.example .dev.vars
-   ```
-
-   Ask the person for their email address and their sending domain, and write them into `.dev.vars` as `OWNER_EMAIL` and `SEND_DOMAIN`. Ask the person to open `.dev.vars` and paste their Resend API key after `RESEND_API_KEY=` themselves, and wait until they say it is done; if the person already keeps the key in a file and tells you so, copy that line in without showing it. Then store all three and delete the file:
-
-   ```sh
-   npx wrangler secret bulk .dev.vars
-   rm .dev.vars
-   ```
-
-6. Send the person to the workers.dev address from step 4. The setup page asks them to save the encryption key, paste their Zero Trust team name, and create and paste a setup token. Setup does the rest. Nothing more is needed from you.
+5. Send the person to the workers.dev address from step 4. The setup page asks them to save the encryption key, type their email address and sending domain, paste their Resend API key, paste their Zero Trust team name, and create and paste a setup token. Setup stores all of it. Nothing more is needed from you, and no secret goes through you.
 
 ## Update
 
@@ -117,8 +104,8 @@ npx wrangler secret put SEND_DOMAIN
 
 If the Worker was deleted while its database stayed, every secret is gone and the letters cannot be opened until the app is restored. Do not make a new database or bucket: the letters and files are in the old ones.
 
-1. Do Install steps 4 and 5: deploy, then store the three secrets.
-2. Send the person to the workers.dev address. The setup page now says Restore timecapsule. It asks them to paste the encryption key they saved during setup, paste their Zero Trust team name, and create and paste a setup token. It only accepts the key that opens their letters; with no letters, it accepts any well-formed key. Setup does the rest.
+1. Do Install step 4: deploy.
+2. Send the person to the workers.dev address. The setup page now says Restore timecapsule. It asks them to paste the encryption key they saved during setup, type their email address and sending domain, paste their Resend API key and their Zero Trust team name, and create and paste a setup token. It only accepts the key that opens their letters; with no letters, it accepts any well-formed key. Setup does the rest.
 
 ## Restore the encryption key
 

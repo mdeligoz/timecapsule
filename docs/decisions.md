@@ -24,10 +24,11 @@ Each choice made while planning timecapsule, why, and what was turned down.
 
 ## Install with an agent or the command line, then one setup page
 
-- Decided — switch Zero Trust and R2 on, install with a coding agent or from the command line, then one setup page: save the encryption key, paste the Zero Trust team name, paste a token made from a pre-filled link
+- Decided — switch Zero Trust and R2 on, install with a coding agent or from the command line, then one setup page: save the encryption key, type the owner email and sending domain and paste the Resend key, paste the Zero Trust team name, paste a token made from a pre-filled link
 - Why — as few steps as possible; the pasted token proves the person owns the account, and the app makes its own storage key and login with it, then deletes it
 - Rejected — a setup script; making keys or picking permissions by hand; Cloudflare's public OAuth clients, which need a hosted, verified app forever; a fifth token permission to read the team name
 - Rejected (2026-10-27, #160) — the Deploy to Cloudflare button; its page was harder than an agent or a terminal (see Updates from tagged releases)
+- Decided (2026-10-27, #173) — the owner email, sending domain and Resend key are asked on the setup page, not stored at install; they were at install only because the Deploy button asked for them. Everything the person types is on one page, and no secret goes through an agent
 - Accepted — a wrong but real team name refuses every login; the page says to copy it from the dashboard
 
 ## Email through Resend, files fetched by link

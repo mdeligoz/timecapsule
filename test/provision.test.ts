@@ -15,6 +15,8 @@ function input(account: ReturnType<typeof fakeAccount>, token = PASTED): Provisi
     versionId: VERSION,
     host: HOST,
     ownerEmail: "owner@example.com",
+    sendDomain: "letters.example",
+    resendKey: "re_test_key",
     fetch: account.fetch,
   };
 }
@@ -57,6 +59,9 @@ describe("setup with the pasted token", () => {
       R2_ACCESS_KEY_ID: keys[0].id,
       R2_SECRET_ACCESS_KEY: await sha256Hex(keys[0].value),
       R2_BUCKET: "timecapsule",
+      OWNER_EMAIL: "owner@example.com",
+      SEND_DOMAIN: "letters.example",
+      RESEND_API_KEY: "re_test_key",
       SETUP_DONE: "1",
     });
     expect(account.tokens.some((t) => t.value === PASTED)).toBe(false);
@@ -91,7 +96,7 @@ describe("setup with the pasted token", () => {
     await provision(input(account));
     const stored = account.calls.filter((c) => c.method === "PUT").map((c) => (c.body as { name: string }).name);
     expect(stored.at(-1)).toBe("SETUP_DONE");
-    expect(new Set(stored).size).toBe(8);
+    expect(new Set(stored).size).toBe(11);
   });
 
   it("refuses a token for another account and changes nothing", async () => {

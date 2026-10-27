@@ -97,7 +97,7 @@ Pick one way.
 Install timecapsule from https://github.com/mdeligoz/timecapsule on my Cloudflare account with Wrangler. Follow AGENTS.md in that repository.
 ```
 
-The agent asks for your email address and your domain, and asks you to paste your Resend key into a file yourself. When it is done, it gives you your app's address.
+The agent makes the database and the storage bucket and deploys the app. When it is done, it gives you your app's address.
 
 **From the command line.** You need Node.js 24 or newer, and git.
 
@@ -123,28 +123,11 @@ The agent asks for your email address and your domain, and asks you to paste you
    npm run deploy
    ```
 
-4. Copy the example settings file:
-
-   ```sh
-   cp .dev.vars.example .dev.vars
-   ```
-
-   Then open `.dev.vars` and fill in:
-   - `OWNER_EMAIL`: your email address. Only you can log in, and every letter is also sent to you.
-   - `SEND_DOMAIN`: your domain verified at Resend, for example `example.com`. Letters are sent from `letters@` this domain.
-   - `RESEND_API_KEY`: the key from step 4 of Get ready.
-
-5. Store the three settings as secrets, then delete the file:
-
-   ```sh
-   npx wrangler secret bulk .dev.vars
-   rm .dev.vars
-   ```
-
 ### 3. Finish setup
 
-1. Open your app at its address, `https://timecapsule.<your-subdomain>.workers.dev`. The setup page has three steps:
+1. Open your app at its address, `https://timecapsule.<your-subdomain>.workers.dev`. The setup page has four steps:
    - Save your encryption key in your password manager. It is shown only once.
+   - Type your email address (only you can log in, and every letter is also sent to you), your domain verified at Resend, and paste your Resend API key.
    - Paste your Zero Trust team name.
    - Open Cloudflare's token page from the link, click Continue to summary, then Create Token, and paste the token.
 2. Setup then makes your login and the storage key, stores them, deletes the token and switches itself off. The login takes up to 3 minutes to start working, so the finished page counts down and then turns on Open timecapsule; Cloudflare emails you a code to log in.
