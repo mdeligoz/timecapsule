@@ -20,18 +20,19 @@ const TOKEN_PERMISSIONS = [
   { key: "access", type: "edit" },
 ];
 const TOKEN_NAME = "timecapsule setup";
-const TOKENS_PAGE = "https://dash.cloudflare.com/?to=/:account/api-tokens";
+export const TOKENS_PAGE = "https://dash.cloudflare.com/?to=/:account/api-tokens";
 // A run that never finished stops holding setup after this long.
 const LOCK_MS = 5 * 60_000;
 // Longer than this after setup finished, missing settings mean the app was deployed again and lost them, not that
 // they are still reaching Cloudflare's servers; setup then asks for the saved key to restore the app.
 const SETTLED_MS = 10 * 60_000;
 
-function tokenLink(): string {
+// Settings' address change makes its token from the same four permissions, under its own name.
+export function tokenLink(name: string): string {
   const params = new URLSearchParams({
     to: "/:account/api-tokens",
     permissionGroupKeys: JSON.stringify(TOKEN_PERMISSIONS),
-    name: TOKEN_NAME,
+    name,
   });
   return `https://dash.cloudflare.com/?${params}`;
 }
@@ -98,7 +99,7 @@ ${keyStep(draft)}
 <section>
 <h2>4. Create a setup token and paste it</h2>
 <ol>
-<li><a href="${tokenLink()}" target="_blank" rel="noopener">Open Cloudflare's token page</a>. Its permissions are already filled in.</li>
+<li><a href="${tokenLink(TOKEN_NAME)}" target="_blank" rel="noopener">Open Cloudflare's token page</a>. Its permissions are already filled in.</li>
 <li>Click <b>Continue to summary</b>, then <b>Create Token</b>.</li>
 <li>Copy the token: the long value Cloudflare shows only once, not the token's ID.</li>
 </ol>
@@ -208,7 +209,9 @@ async function finishSetup(request: Request, env: SetupEnv, fetcher: Fetcher, no
     ]);
   }
 
-  const certs = await fetcher(`${team}/cdn-cgi/access/certs`, {}).catch(() => null);
+  const certs = await fetcher(`${team}/cdn-cgi/access/certs`, { signal: AbortSignal.timeout(30_000) }).catch(
+    () => null,
+  );
   if (!certs) {
     return withStatus(
       setupForm(draft, [html`Cloudflare could not be reached to check the team name. Press Finish setup again.`]),
@@ -270,7 +273,8 @@ async function finishSetup(request: Request, env: SetupEnv, fetcher: Fetcher, no
       fetch: fetcher,
     });
     if (outcome.ok) {
-      await env.DB.prepare("UPDATE settings SET setup_finished_at = ?").bind(now).run();
+      // A restore's new login covers only the workers.dev address, so an address set in Settings no longer works.
+      await env.DB.prepare("UPDATE settings SET setup_finished_at = ?, address = NULL").bind(now).run();
       return finished(draft.email, outcome.tokenDeleted);
     }
     if (outcome.otherAccount) {

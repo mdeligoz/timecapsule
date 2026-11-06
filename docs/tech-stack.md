@@ -102,6 +102,15 @@
 - R2 key — an account-owned token with "Workers R2 Storage Bucket Item Write" on one bucket; key id is the token id, secret is the SHA-256 hex of its value; refused on other buckets (HTTP 403)
 - Deleted token — Cloudflare refuses it right after deletion
 
+## Own address (checked 2026-11-06)
+
+- Token — the setup token's four permissions, under the name "timecapsule address"; no domain permission, so the token page shows no domain box
+- Attach — `PUT /accounts/{id}/workers/domains` with the address, the Worker's name and `environment: "production"` needs only Workers Scripts Write; Cloudflare works out the domain and makes the DNS record and certificate; the address answered over HTTPS within seconds
+- Domain not on the account — HTTP 400, code 10082, "Can't infer zone from route"
+- Login — the Access app is sent back whole with the address added to `destinations` and `self_hosted_domains`; its audience and policy stay the same, so the app's own login check is unchanged; Access guarded the address about 50 seconds later
+- Worker and script name — the app finds its account and Worker through its Access app, by the audience it already checks, and that app's workers.dev address
+- Updates — Wrangler 4.149 changes custom domains only when `wrangler.jsonc` lists some, and it lists none
+
 ## Free CPU limit (measured 2026-10-18)
 
 - The 10 ms is an allowance that refills over time, not a cap on each request; this is observed, not documented

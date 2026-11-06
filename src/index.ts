@@ -5,6 +5,7 @@ import { lettersPage } from "./letters";
 import { AccessKeys, loginEmail } from "./login";
 import { sendStatus } from "./notify";
 import { fromOtherSite, otherSite } from "./origin";
+import { changeAddress } from "./own-address";
 import { type SendEnv, sendDue } from "./send";
 import { saveSettings, settingsPage } from "./settings";
 import { type SetupEnv, setup } from "./setup";
@@ -34,6 +35,9 @@ export async function handle(request: Request, env: Env, keys: AccessKeys, nowSe
   if (request.method === "GET" && url.pathname === "/settings")
     return page(await settingsPage(env.DB, url), { here: "/settings" });
   if (request.method === "POST" && url.pathname === "/settings") return saveSettings(request, env.DB);
+  if (request.method === "POST" && url.pathname === "/settings/address") {
+    return changeAddress(request, env, (url, init) => fetch(url, init));
+  }
   if (request.method === "GET" && url.pathname === "/export") return exportList(env, now);
   const exported = /^\/export\/letters\/(\d+)$/.exec(url.pathname);
   if (request.method === "GET" && exported) return exportPage(env, Number(exported[1]));

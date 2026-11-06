@@ -106,6 +106,7 @@ If the Worker was deleted while its database stayed, every secret is gone and th
 
 1. Do Install step 4: deploy.
 2. Send the person to the workers.dev address. The setup page now says Restore timecapsule. It asks them to paste the encryption key they saved during setup, type their email address and sending domain, paste their Resend API key and their Zero Trust team name, and create and paste a setup token. It only accepts the key that opens their letters; with no letters, it accepts any well-formed key. Setup does the rest.
+3. If they had an address of their own, it no longer works: the new login covers only the workers.dev address. They set it again in Settings, under Your address.
 
 ## Restore the encryption key
 

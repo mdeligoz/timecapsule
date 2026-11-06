@@ -15,7 +15,9 @@ let call: (method: string, path: string, body?: BodyInit) => Promise<Response>;
 beforeEach(async () => {
   await applyD1Migrations(env.DB, env.TEST_MIGRATIONS);
   await env.DB.prepare("DELETE FROM letters").run();
-  await env.DB.prepare("UPDATE settings SET time_zone = NULL, failure_alert = 1, monthly_status = 1").run();
+  await env.DB.prepare(
+    "UPDATE settings SET time_zone = NULL, failure_alert = 1, monthly_status = 1, address = NULL",
+  ).run();
   const signer = await makeSigner();
   const app: Env = {
     ACCESS_TEAM_DOMAIN: "https://owner-team.cloudflareaccess.com",
@@ -109,6 +111,34 @@ describe("Settings screen", () => {
 
   it("does not say saved before anything is saved", async () => {
     expect(await (await call("GET", "/settings")).text()).not.toContain("Settings saved.");
+  });
+
+  it("shows the app's own address, and a token link with setup's four permissions to change it", async () => {
+    let page = await (await call("GET", "/settings")).text();
+    expect(page).toContain("<h2>Your address</h2>");
+    expect(page).toContain("timecapsule is only at its workers.dev address.");
+    expect(page).toContain('<form class="settings" method="post" action="/settings/address">');
+    const link = /<a href="(https:\/\/dash\.cloudflare\.com\/[^"]+)"/.exec(page)?.[1] ?? "";
+    const params = new URL(link.replaceAll("&amp;", "&")).searchParams;
+    expect(params.get("to")).toBe("/:account/api-tokens");
+    expect(JSON.parse(params.get("permissionGroupKeys") ?? "")).toEqual([
+      { key: "account_settings", type: "read" },
+      { key: "workers_scripts", type: "edit" },
+      { key: "account_api_tokens", type: "edit" },
+      { key: "access", type: "edit" },
+    ]);
+    expect(params.get("name")).toBe("timecapsule address");
+
+    await env.DB.prepare("UPDATE settings SET address = 'time.owner.example'").run();
+    page = await (await call("GET", "/settings")).text();
+    expect(page).toContain('timecapsule is also at <a href="https://time.owner.example/">time.owner.example</a>.');
+    expect(page).toContain('<input name="address" value="time.owner.example"');
+  });
+
+  it("refuses an address posted from Settings that is not one, before calling Cloudflare", async () => {
+    const response = await call("POST", "/settings/address", new URLSearchParams({ address: "not one", token: "x" }));
+    expect(response.status).toBe(400);
+    expect(await response.text()).toContain("Type only the address, for example time.example.com.");
   });
 
   it("a saved zone dates the Letters screen and starts a new letter", async () => {

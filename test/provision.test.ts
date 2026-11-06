@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { cleanToken, type ProvisionInput, provision } from "../src/provision";
 import { BUCKET_ITEM_WRITE, fakeAccount, OTHER, OURS, PASTED, SCRIPT, VERSION } from "./fake-cloudflare";
 
@@ -184,6 +184,34 @@ describe("setup with the pasted token", () => {
     expect(made(account)).toEqual({ keys: [], apps: [] });
     expect(account.tokens.some((t) => t.value === PASTED)).toBe(false);
     expect(account.secrets.has("SETUP_DONE")).toBe(false);
+  });
+
+  it("gives up on a call Cloudflare never answers after 30 seconds, removes what it made and deletes the token", async () => {
+    const account = fakeAccount();
+    // The real timer, shortened so the test does not wait 30 seconds; the time each call asks for is recorded.
+    const timeout = AbortSignal.timeout.bind(AbortSignal);
+    const asked: number[] = [];
+    const spy = vi.spyOn(AbortSignal, "timeout").mockImplementation((ms) => {
+      asked.push(ms);
+      return timeout(10);
+    });
+    // Storing the login's audience takes the connection and never answers; like fetch, it stops only when its signal fires.
+    const fetch = (url: string, init: RequestInit) =>
+      init.method === "PUT" && JSON.parse(String(init.body)).name === "ACCESS_AUD"
+        ? new Promise<Response>((_, reject) => {
+            init.signal?.addEventListener("abort", () => reject(init.signal?.reason));
+          })
+        : account.fetch(url, init);
+    try {
+      const outcome = await provision({ ...input(account), fetch });
+      expect(outcome).toMatchObject({ ok: false, step: "store the app's settings", tokenDeleted: true });
+      expect(asked.length).toBeGreaterThan(0);
+      expect(asked.every((ms) => ms === 30_000)).toBe(true);
+      expect(made(account)).toEqual({ keys: [], apps: [] });
+      expect(account.secrets.has("SETUP_DONE")).toBe(false);
+    } finally {
+      spy.mockRestore();
+    }
   });
 
   it("clears what an earlier stopped try left behind, on any page of the lists, before making new ones", async () => {

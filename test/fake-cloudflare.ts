@@ -1,14 +1,25 @@
-// A stand-in Cloudflare account for exercising our own setup code: it keeps the tokens, Access apps and Worker secrets
-// that setup makes, so a test can look at what was left behind. Nothing here claims how the real API behaves, except
-// the running version's answer, captured from a real Worker; an install on a real account checks the rest.
+// A stand-in Cloudflare account for exercising our own setup code: it keeps the tokens, Access apps, Worker secrets and
+// Worker addresses that setup and Settings make, so a test can look at what was left behind. Nothing here claims how
+// the real API behaves, except the answers captured from real calls: the running version, and an address on a domain
+// the account does not have; an install on a real account checks the rest.
 import version from "./fixtures/cloudflare-worker-version.json";
+import notOnAccount from "./fixtures/workers-domain-not-on-account.json";
 
 export type Call = { method: string; path: string; body: unknown; auth: string | null };
 type CloudflareError = { code: number; message: string; error_chain?: CloudflareError[] };
 export type Answer = { status?: number; result?: unknown; errors?: CloudflareError[]; pages?: number };
 
 type Token = { id: string; name: string; value: string; policies?: unknown };
-type App = { id: string; aud: string; name: string; domain: string; policies?: unknown };
+type App = {
+  id: string;
+  aud: string;
+  name: string;
+  domain: string;
+  self_hosted_domains?: string[];
+  destinations?: { type: string; uri: string }[];
+  policies?: unknown;
+};
+type Address = { id: string; hostname: string; service: string; environment: string };
 
 export const OURS = "acc-ours";
 export const OTHER = "acc-other";
@@ -34,6 +45,9 @@ export function fakeAccount(bucket?: string) {
     { id: "app-other-2", aud: "aud-y", name: "wiki", domain: "wiki.example.com" },
   ];
   const secrets = new Map<string, string>();
+  // The domains on the account; a Worker address can only be on one of them.
+  const zones = ["owner.example"];
+  const addresses: Address[] = [];
   const accounts = [{ id: OTHER }, { id: OURS }];
   let made = 0;
   // A test sets this to make one call fail; returning undefined lets the call through.
@@ -98,11 +112,37 @@ export function fakeAccount(bucket?: string) {
       return { result: { id: app.id, aud: app.aud } };
     }
     const app = /^\/access\/apps\/([^/]+)$/.exec(rest)?.[1];
+    const found = apps.find((a) => a.id === app);
+    if (call.method === "GET" && app) return found ? { result: found } : notFound("no such app");
+    if (call.method === "PUT" && app) {
+      if (!found) return notFound("no such app");
+      Object.assign(found, call.body, { id: found.id, aud: found.aud });
+      return { result: found };
+    }
     if (call.method === "DELETE" && app) {
       const at = apps.findIndex((a) => a.id === app);
       if (at < 0) return notFound("no such app");
       apps.splice(at, 1);
       return { result: { id: app } };
+    }
+    if (call.method === "GET" && rest === "/workers/domains") return { result: addresses };
+    if (call.method === "PUT" && rest === "/workers/domains") {
+      const body = call.body as { hostname: string; service: string; environment: string };
+      if (!zones.some((zone) => body.hostname.endsWith(`.${zone}`))) {
+        const message = notOnAccount.body.errors[0].message.replace("time.example.com", body.hostname);
+        return { status: notOnAccount.status, errors: [{ code: notOnAccount.body.errors[0].code, message }] };
+      }
+      const existing = addresses.find((a) => a.hostname === body.hostname);
+      if (existing) Object.assign(existing, body);
+      else addresses.push({ id: `addr-made-${++made}`, ...body });
+      return { result: addresses.find((a) => a.hostname === body.hostname) };
+    }
+    const address = /^\/workers\/domains\/([^/]+)$/.exec(rest)?.[1];
+    if (call.method === "DELETE" && address) {
+      const at = addresses.findIndex((a) => a.id === address);
+      if (at < 0) return notFound("no such address");
+      addresses.splice(at, 1);
+      return { result: null };
     }
     if (call.method === "PUT" && rest === `/workers/scripts/${SCRIPT}/secrets`) {
       const body = call.body as { name: string; text: string; type: string };
@@ -140,6 +180,7 @@ export function fakeAccount(bucket?: string) {
     tokens,
     apps,
     secrets,
+    addresses,
     failWhen(rule: (call: Call) => Answer | undefined) {
       fail = rule;
     },

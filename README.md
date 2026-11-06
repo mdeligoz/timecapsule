@@ -2,7 +2,7 @@
 
 Write a letter today. It arrives by email on the day you choose, a year or twenty years from now, with its photos and videos.
 
-timecapsule is a self-hosted alternative to [FutureMe](https://www.futureme.org/). It runs on your own Cloudflare account, on Cloudflare's free plans, so there is no subscription and nobody else holds your letters.
+timecapsule is a self-hosted app for writing to your future self. It runs on your own Cloudflare account, on Cloudflare's free plans, so there is no subscription and nobody else holds your letters.
 
 [![Watch the film on YouTube: the timecapsule envelope and its wax seal](docs/images/film.jpg)](https://youtu.be/T1ZPPtAJERA)
 
@@ -131,6 +131,7 @@ The agent makes the database and the storage bucket and deploys the app. When it
    - Paste your Zero Trust team name.
    - Open Cloudflare's token page from the link, click Continue to summary, then Create Token, and paste the token.
 2. Setup then makes your login and the storage key, stores them, deletes the token and switches itself off. The login takes up to 3 minutes to start working, so the finished page counts down and then turns on Open timecapsule; Cloudflare emails you a code to log in.
+3. Optional, now or any time later: put timecapsule on an address of your own, such as `time.example.com`. In Settings, under Your address, type the address, create a token from the link and paste it. The domain must be on Cloudflare, in the same account; Cloudflare makes the DNS record and the certificate, and an address that already has a CNAME record is refused. Change or remove the address there the same way. The workers.dev address always keeps working.
 
 > [!WARNING]
 > Never change the encryption key. Letters locked with the old key can no longer be opened. If the app is ever deleted and deployed again, its setup page asks for the key you saved and brings your letters back; [AGENTS.md](AGENTS.md) has the steps.
@@ -163,4 +164,4 @@ The browser tests need `npx playwright install chromium` once.
 
 ## License
 
-[MIT](LICENSE). timecapsule is not affiliated with FutureMe.
+[MIT](LICENSE).

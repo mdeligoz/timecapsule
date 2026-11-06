@@ -41,7 +41,7 @@ describe("database layout", () => {
     ]);
   });
 
-  it("starts with one settings row: no time zone yet, both emails on", async () => {
+  it("starts with one settings row: no time zone yet, both emails on, no address of its own", async () => {
     await migrate();
     const { results } = await env.DB.prepare("SELECT * FROM settings").all();
     expect(results).toEqual([
@@ -53,6 +53,8 @@ describe("database layout", () => {
         last_status_month: null,
         setup_started_at: null,
         setup_finished_at: null,
+        address: null,
+        address_leaving: null,
       },
     ]);
     await expect(env.DB.prepare("INSERT INTO settings (id) VALUES (2)").run()).rejects.toThrow();

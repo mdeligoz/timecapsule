@@ -28,7 +28,7 @@ type Binding = { name: string; type: string; bucket_name?: string };
 type CloudflareError = { code: number; message: string; error_chain?: CloudflareError[] };
 type Answer<T> = { result: T; result_info?: { page: number; total_pages: number } };
 
-class StepFailed extends Error {
+export class StepFailed extends Error {
   constructor(
     message: string,
     readonly status?: number,
@@ -42,12 +42,13 @@ function describeError(error: CloudflareError): string {
   return `${error.code} ${error.message}${chain ? ` (${chain})` : ""}`;
 }
 
-function client(token: string, fetcher: Fetcher) {
+export function client(token: string, fetcher: Fetcher) {
   return async function call<T>(method: string, path: string, body?: unknown): Promise<Answer<T>> {
     const response = await fetcher(`${API}${path}`, {
       method,
       headers: { authorization: `Bearer ${token}`, "content-type": "application/json" },
       body: body === undefined ? undefined : JSON.stringify(body),
+      signal: AbortSignal.timeout(30_000),
     });
     const text = await response.text();
     let parsed: Answer<T> & { success?: boolean; errors?: CloudflareError[] };
@@ -62,6 +63,16 @@ function client(token: string, fetcher: Fetcher) {
     }
     return parsed;
   };
+}
+
+// Every page of a list; Cloudflare says in result_info how many pages there are.
+export async function listAll<T>(call: ReturnType<typeof client>, path: string): Promise<T[]> {
+  const items: T[] = [];
+  for (let page = 1; ; page++) {
+    const answer = await call<T[]>("GET", `${path}?page=${page}&per_page=50`);
+    items.push(...answer.result);
+    if (!answer.result_info || page >= answer.result_info.total_pages) return items;
+  }
 }
 
 async function sha256Hex(text: string): Promise<string> {
@@ -79,15 +90,7 @@ export async function provision(input: ProvisionInput): Promise<ProvisionOutcome
   // Called unbound, so the runtime's own fetch could be passed straight in: called as input.fetch() it throws
   // "Illegal invocation".
   const call = client(token, input.fetch);
-  // Every page of a list; Cloudflare says in result_info how many pages there are.
-  async function all<T>(path: string): Promise<T[]> {
-    const items: T[] = [];
-    for (let page = 1; ; page++) {
-      const answer = await call<T[]>("GET", `${path}?page=${page}&per_page=50`);
-      items.push(...answer.result);
-      if (!answer.result_info || page >= answer.result_info.total_pages) return items;
-    }
-  }
+  const all = <T>(path: string) => listAll<T>(call, path);
 
   const keyName = `${input.scriptName} files`;
   let step = "check the token";
@@ -203,7 +206,11 @@ export async function provision(input: ProvisionInput): Promise<ProvisionOutcome
 }
 
 // Deleted only counts once Cloudflare refuses the token.
-async function deleteToken(call: ReturnType<typeof client>, accountId: string, tokenId: string): Promise<boolean> {
+export async function deleteToken(
+  call: ReturnType<typeof client>,
+  accountId: string,
+  tokenId: string,
+): Promise<boolean> {
   try {
     await call("DELETE", `/accounts/${accountId}/tokens/${tokenId}`);
   } catch {

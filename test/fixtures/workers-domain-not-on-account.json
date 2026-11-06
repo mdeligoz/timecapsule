@@ -1,0 +1,12 @@
+{
+  "status": 400,
+  "body": {
+    "success": false,
+    "errors": [
+      {
+        "code": 10082,
+        "message": "Can't infer zone from route, please specify zone for \"time.example.com\""
+      }
+    ]
+  }
+}

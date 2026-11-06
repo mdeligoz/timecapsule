@@ -1,5 +1,5 @@
 import { applyD1Migrations, env as testEnv } from "cloudflare:test";
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import worker from "../src/index";
 import { finishButton } from "../src/ready";
 import { importLetterKey, seal } from "../src/seal";
@@ -184,6 +184,33 @@ describe("setup page", () => {
       expect(response.status, team).toBe(status);
       expect(await response.text()).toContain(shows);
       expect(closed, team).toBe(true);
+    }
+  });
+
+  it("gives up on a team check that never answers after 30 seconds, before using the token", async () => {
+    const { account, fetcher: answers } = world();
+    // The real timer, shortened so the test does not wait 30 seconds; the time setup asks for is recorded.
+    const timeout = AbortSignal.timeout.bind(AbortSignal);
+    const asked: number[] = [];
+    const spy = vi.spyOn(AbortSignal, "timeout").mockImplementation((ms) => {
+      asked.push(ms);
+      return timeout(10);
+    });
+    // The certs page takes the connection and never answers; like fetch, it stops only when its signal fires.
+    const fetcher = (url: string, init: RequestInit) =>
+      url.startsWith("https://api.cloudflare.com/")
+        ? answers(url, init)
+        : new Promise<Response>((_, reject) => {
+            init.signal?.addEventListener("abort", () => reject(init.signal?.reason));
+          });
+    try {
+      const response = await setup(finish(await ready()), ENV, fetcher, NOW);
+      expect(response.status).toBe(502);
+      expect(await response.text()).toContain("Cloudflare could not be reached to check the team name.");
+      expect(asked).toEqual([30_000]);
+      expect(account.calls).toEqual([]);
+    } finally {
+      spy.mockRestore();
     }
   });
 
@@ -470,6 +497,14 @@ describe("setup page", () => {
     expect(html).toContain("This is not a timecapsule encryption key");
     expect(html).not.toContain('id="letter-key"');
     expect(account.calls).toEqual([]);
+  });
+
+  it("forgets the app's own address on a restore, as the new login covers only the workers.dev address", async () => {
+    await finishedAt(NOW - 11 * 60_000);
+    await testEnv.DB.prepare("UPDATE settings SET address = 'time.owner.example'").run();
+    const { fetcher } = world();
+    expect((await setup(finish(restoring(SAVED_KEY)), ENV, fetcher, NOW)).status).toBe(200);
+    expect(await testEnv.DB.prepare("SELECT address FROM settings").first("address")).toBeNull();
   });
 
   it("restores with any well-formed key when there are no letters", async () => {

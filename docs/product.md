@@ -5,7 +5,8 @@
 - Letters — home; Waiting and Sent tabs; sort by writing date or send time; Write a new letter button; every screen has a menu of Letters, Write and Settings
 - Write letter — subject, Markdown editor with toolbar and preview (the preview takes the editor's place), send date from the app's own calendar with quick picks of 1, 5, 10 and 20 years, send hour picked from a list (no minutes; hours under 7 days or over 20 years after writing greyed out), time zone, recipients with the owner shown as the first line, files added by button or by dropping them anywhere on the page; also used to edit
 - Letter — one letter; waiting: subject and send time, Reveal shows the text; sent: full text and files; Edit and Delete
-- Settings — time zone, failure alert on or off, monthly status email on or off, Export, and the running version ("timecapsule v0.1.0") at the foot
+- Settings — time zone, failure alert on or off, monthly status email on or off, your own address, Export, and the running version ("timecapsule v0.1.0") at the foot
+- Your own address — optional, set, changed or removed in Settings with a pasted token, at install or any time later; on a domain in the same Cloudflare account; the workers.dev address always stays
 - Login — Cloudflare Access's page, not the app's
 - Setup page — first visit only; switches off once setup is done; comes back as Restore timecapsule if the app is deployed again and loses its settings, and asks for the saved encryption key
 

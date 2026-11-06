@@ -54,3 +54,17 @@ test("changes the time zone and the emails, and a new letter starts in the saved
   await page.goto("/write");
   await expect(page.getByLabel("Time zone")).toHaveValue("America/Chicago");
 });
+
+test("the address box stops at 253 characters, and what is not an address is refused before Cloudflare is asked", async ({
+  page,
+}) => {
+  await page.goto("/settings");
+  const address = page.getByLabel("Address");
+  await address.fill("a".repeat(300));
+  await expect(address).toHaveValue("a".repeat(253));
+  await address.fill("not an address");
+  await page.getByLabel("Token").fill("pasted-token");
+  await page.getByRole("button", { name: "Change address" }).click();
+  await expect(page.getByRole("alert")).toHaveText("Type only the address, for example time.example.com.");
+  await expect(page.getByText("timecapsule is only at its workers.dev address.")).toBeVisible();
+});
